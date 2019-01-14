@@ -5,4 +5,4 @@ Simple ball game:
 -start game with 'o' or 'O'
 -exit game with esc
 -3 levels exist
--dodge obstacles and finish levels
+-dodge obstacles using 'a' for left and 'd' for right and finish levels
