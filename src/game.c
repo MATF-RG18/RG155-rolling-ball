@@ -13,7 +13,11 @@ int animation_ongoing = 0;
 int timer_id = 0;
 int score = 0;
 int level = 0;
+int hasExtraLife = 0;
+int deleteExtraLife = 0;
 FILE* obst = NULL;
+
+ExtraLife extraLife;
 
 //pravi se niz struktura
 Obstacle obstacles[5];
@@ -27,6 +31,12 @@ void initialValues() {
     obstacles[0].y_coord = 2.4;
     for(i = 1; i < 5; i++)
         obstacles[i].y_coord = obstacles[i-1].y_coord + 1.5;
+}
+
+
+void generateRadnomsForExtraLife() {
+    extraLife.x_coord = (float)(rand() % 351 - 175) / 100;
+    extraLife.y_coord = 10.0 + (float)(rand() % 351 - 175) / 100;
 }
 
 //generisemo prvih 5 linija prepreka
@@ -147,6 +157,7 @@ void on_display(void) {
     drawObstacle();
     //crta se glavna sfera
     drawBall();
+    drawExtraLife();
     writeScore();
     glutSwapBuffers();
 }
@@ -159,18 +170,67 @@ void detectCollisionWithRoad() {
         translationPar = 1.7;
 }
 
-//funkcija iscrtavanja glavne sfere
-void drawBall(void) {
-    
-    //postavljnje materijala za glavnu sferu
-    GLfloat ambientCoeffs[] = { 0.0215, 0.1745, 0.0215, 1 };
-    GLfloat diffuseCoeffs[] = { 0.07568, 0.61424, 0.07568, 1 };
-    GLfloat specularCoeffs[] = { 0.633, 0.727811, 0.633, 1 };
+void drawExtraLife() {
+    GLfloat ambientCoeffs[] = { 0.01, 0.01, 0.4215, 1 };
+    GLfloat diffuseCoeffs[] = { 0.03568, 0.024, 0.7568, 1 };
+    GLfloat specularCoeffs[] = { 0.0633, 0.0311, 0.933, 1 };
     GLfloat shininess = 100;
     
     glMaterialfv(GL_FRONT, GL_AMBIENT, ambientCoeffs);
     glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuseCoeffs);
     glMaterialfv(GL_FRONT, GL_SPECULAR, specularCoeffs);
+    glMaterialf(GL_FRONT, GL_SHININESS, shininess);
+    
+    extraLife.y_coord -= 0.05;
+    if(extraLife.y_coord <= -0.8 && extraLife.y_coord >= -1.1) 
+            detectCollisionWithExtraLife();
+    else if(extraLife.y_coord < -3.0)
+        generateRadnomsForExtraLife();
+    
+    glPushMatrix();
+        glTranslatef(extraLife.x_coord, extraLife.y_coord, 0);
+        //glTranslatef(translationPar, 0, 0);
+        glRotatef(animationPar, 1, 0, 0);
+        glutSolidSphere(0.13, 20, 20);
+    glPopMatrix();
+    
+}
+
+void detectCollisionWithExtraLife() {
+    float ballPosition = -translationPar, res;
+    res = extraLife.x_coord - ballPosition;
+        if(res < 0)
+            res = -res;
+        //ako je doslo do kolizije zavrsavamo sa igrom
+        if(res < 0.28){
+            hasExtraLife = 1;
+            deleteExtraLife = 10;
+            generateRadnomsForExtraLife();
+        }
+}
+
+//funkcija iscrtavanja glavne sfere
+void drawBall(void) {
+    //postavljnje materijala za glavnu sferu
+    
+    GLfloat ambientCoeffsExtraLife[] = { 0.01, 0.01, 0.4215, 1 };
+    GLfloat diffuseCoeffsExtraLife[] = { 0.03568, 0.024, 0.7568, 1 };
+    GLfloat specularCoeffsExtraLife[] = { 0.0633, 0.0311, 0.933, 1 };
+    
+    GLfloat ambientCoeffs[] = { 0.0215, 0.1745, 0.0215, 1 };
+    GLfloat diffuseCoeffs[] = { 0.07568, 0.61424, 0.07568, 1 };
+    GLfloat specularCoeffs[] = { 0.633, 0.727811, 0.633, 1 };
+    
+    GLfloat shininess = 100;
+    if(hasExtraLife){
+        glMaterialfv(GL_FRONT, GL_AMBIENT, ambientCoeffsExtraLife);
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuseCoeffsExtraLife);
+        glMaterialfv(GL_FRONT, GL_SPECULAR, specularCoeffsExtraLife);
+    }else {
+        glMaterialfv(GL_FRONT, GL_AMBIENT, ambientCoeffs);
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuseCoeffs);
+        glMaterialfv(GL_FRONT, GL_SPECULAR, specularCoeffs);
+    }
     glMaterialf(GL_FRONT, GL_SHININESS, shininess);
     
     //iscrtavamo loptu
@@ -244,9 +304,15 @@ void detecCollisionWihtObstacles(int i) {
             res = -res;
         //ako je doslo do kolizije zavrsavamo sa igrom
         if(res < 0.28){
-            animation_ongoing = 0;
-            timer_id = -1;
-            writeMessage();
+            if(hasExtraLife) {
+                //uzasno resenje ali radi, ako ima dodatni zivot i detektuje se kolizija
+                //ceka se narednih 5 iscrtavanja zatim se brise dodatni zivot
+                deleteExtraLife = 5;
+            }else {
+                animation_ongoing = 0;
+                timer_id = -1;
+                writeMessage();
+            }
         }
     }
 }
@@ -445,6 +511,11 @@ void on_timer(int value) {
     
     //uvecavamo animacioni parametar u svakom pozivu on_timer funkcije
     animationPar += 20;
+    if(deleteExtraLife <= 5 && deleteExtraLife > 0){
+        deleteExtraLife -= 1;
+    }else if(deleteExtraLife == 0){
+        hasExtraLife = 0;
+    }
     if(animationPar >= 2880)
         animationPar = 0;
 
@@ -457,7 +528,7 @@ void on_timer(int value) {
 //glut inicijalizacija 
 
 void initialize(void) {
-    
+    srand(time(NULL));
     glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
     //postavljanje velicine prozora
     glutInitWindowSize(1000, 1000);
@@ -472,6 +543,8 @@ void initialize(void) {
     
     glClearColor(0, 0, 0, 0);
     glEnable(GL_DEPTH_TEST);
+    
+    generateRadnomsForExtraLife();
     
     int i;
     //inicijalizacija vektora pomeraja ***magic numbers***
