@@ -15,6 +15,7 @@ typedef struct {
     float y_coord;
     int num_of_obstacles_in_row;
     float x_coords[MAX_OBSTICLES];
+    float x_vectors[MAX_OBSTICLES];
 } Obstacle;
 
 void on_keyboard(unsigned char key, int x, int y);

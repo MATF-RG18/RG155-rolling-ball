@@ -199,6 +199,16 @@ void drawObstacle(void) {
     glMaterialf(GL_FRONT, GL_SHININESS, shininess);
 
     int i, j;
+    //pomeramo prepreke levo desno
+    for(i = 0; i < 5; i++) {
+        for(j = 0; j < obstacles[i].num_of_obstacles_in_row; j++) {
+            obstacles[i].x_coords[j] += obstacles[i].x_vectors[j];
+            if(obstacles[i].x_coords[j] > 1.8 || obstacles[i].x_coords[j] < -1.8) {
+                obstacles[i].x_vectors[j] *= -1;
+            }
+        }
+    }
+    
     for(i = 0; i < 5; i++) {
         //umanjujemo y koordinatu, simuliramo kretanje
         obstacles[i].y_coord -= 0.045;
@@ -462,6 +472,17 @@ void initialize(void) {
     
     glClearColor(0, 0, 0, 0);
     glEnable(GL_DEPTH_TEST);
+    
+    int i;
+    //inicijalizacija vektora pomeraja ***magic numbers***
+    for(i = 0; i < 5; i++) {
+        obstacles[i].x_vectors[0] = 0.013;
+        obstacles[i].x_vectors[1] = 0.021;
+        obstacles[i].x_vectors[2] = -0.016;
+        obstacles[i].x_vectors[3] = -0.023;
+        obstacles[i].x_vectors[4] = 0.017;
+        obstacles[i].x_vectors[5] = -0.017;
+    }
     
 }
 
